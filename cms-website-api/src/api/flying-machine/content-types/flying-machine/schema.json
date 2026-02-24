@@ -1,0 +1,62 @@
+{
+  "kind": "collectionType",
+  "collectionName": "flying_machines",
+  "info": {
+    "singularName": "flying-machine",
+    "pluralName": "flying-machines",
+    "displayName": "Flying Machine"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Name": {
+      "type": "string"
+    },
+    "Description": {
+      "type": "text"
+    },
+    "Attack": {
+      "type": "integer",
+      "min": 1,
+      "max": 5
+    },
+    "Defense": {
+      "type": "integer",
+      "min": 1,
+      "max": 5
+    },
+    "Speed": {
+      "type": "integer",
+      "min": 1,
+      "max": 5
+    },
+    "Agility": {
+      "type": "integer",
+      "min": 1,
+      "max": 5
+    },
+    "Capacity": {
+      "type": "integer",
+      "min": 1,
+      "max": 5
+    },
+    "Image": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "weapons": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::weapon.weapon",
+      "inversedBy": "flying_machines"
+    }
+  }
+}
