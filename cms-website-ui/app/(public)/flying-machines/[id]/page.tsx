@@ -48,7 +48,7 @@ export default async function Page({
       <div className="mx-auto w-full max-w-5xl p-6">
         <h1 className="text-2xl font-bold">Hiba</h1>
         <p className="mt-2 text-sm text-zinc-700">
-          Nem sikerült betölteni a repülőgépet. Ellenőrizd Vercel-en a <b>STRAPI_API_URL</b> és <b>STRAPI_API_TOKEN</b> változókat, illetve hogy a Strapi elérhető-e kívülről.
+          Nem sikerült betölteni a repülőgépet. 
         </p>
       </div>
     );
