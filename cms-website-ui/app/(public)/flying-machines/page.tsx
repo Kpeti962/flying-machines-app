@@ -7,6 +7,41 @@ import { FlyingMachinesQuery, Machine, Weapon } from "@/lib/types";
 import Image from "next/image";
 import Link from "next/link";
 
+function getMachineFields(raw: any): any {
+  if (!raw || typeof raw !== "object") return {};
+  return raw.attributes && typeof raw.attributes === "object" ? { ...raw, ...raw.attributes } : raw;
+}
+
+function normalizeWeapons(rawWeapons: any): Weapon[] {
+  if (!rawWeapons) return [];
+  if (Array.isArray(rawWeapons)) return rawWeapons as Weapon[];
+
+  // Strapi relation shapes: { data: [...] } or { data: { ... } }
+  const data = rawWeapons?.data;
+  if (Array.isArray(data)) {
+    return data.map((w: any) => {
+      const fields = getMachineFields(w);
+      return {
+        id: fields.id,
+        documentId: fields.documentId,
+        Name: fields.Name,
+      } as Weapon;
+    });
+  }
+  if (data && typeof data === "object") {
+    const fields = getMachineFields(data);
+    return [
+      {
+        id: fields.id,
+        documentId: fields.documentId,
+        Name: fields.Name,
+      } as Weapon,
+    ];
+  }
+
+  return [];
+}
+
 function getStrapiBaseUrl() {
   const explicit = process.env.STRAPI_BASE_URL;
   if (explicit) return explicit;
@@ -79,8 +114,10 @@ export default async function Page({ searchParams }: PageProps) {
       </div>
       <div className="col-span-9 ">
         <div className="p-5 grid grid-cols-3 gap-5">
-          {machines.map((machine: Machine) => {
-            const rawImageUrl = extractMediaUrl(machine.Image);
+          {machines.map((machine: any) => {
+            const fields = getMachineFields(machine);
+            const machineWeapons = normalizeWeapons(fields.weapons);
+            const rawImageUrl = extractMediaUrl(fields.Image);
             const imageSrc = rawImageUrl
               ? rawImageUrl.startsWith("http")
                 ? rawImageUrl
@@ -90,31 +127,31 @@ export default async function Page({ searchParams }: PageProps) {
               : undefined;
 
             return (
-            <div key={machine.documentId || machine.id} className="bg-zinc-100 flex flex-col gap-5 items-center py-5">
-              <Link href={`/flying-machines/${machine.documentId || machine.id}`}>
+            <div key={fields.documentId || fields.id} className="bg-zinc-100 flex flex-col gap-5 items-center py-5">
+              <Link href={`/flying-machines/${fields.documentId || fields.id}`}>
                 {imageSrc ? (
                   <Image
                     src={imageSrc}
                     height={156}
                     width={156}
                     unoptimized
-                    alt={machine.Name}
+                    alt={fields.Name}
                   />
                 ) : (
                   <div className="h-[156px] w-[156px] bg-zinc-200" />
                 )}
               </Link>
-              <div>{machine.Name}</div>
+              <div>{fields.Name}</div>
               <div className="grid grid-cols-3 gap-5">
-                <div>🗡️{machine.Attack}</div>
-                <div>🛡️{machine.Defense}</div>
-                <div>🚀{machine.Speed}</div>
+                <div>🗡️{fields.Attack}</div>
+                <div>🛡️{fields.Defense}</div>
+                <div>🚀{fields.Speed}</div>
               </div>
               <div>
                 <ul>
                   <li className="flex gap-2 font-bold items-center">
-                    {machine.weapons?.map((weapon: Weapon) => (
-                      <div key={weapon.id} className="text-sm">
+                    {machineWeapons.map((weapon: Weapon) => (
+                      <div key={weapon.documentId || weapon.id} className="text-sm">
                         {weapon.Name}
                       </div>
                     ))}

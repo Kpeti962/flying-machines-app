@@ -3,6 +3,11 @@ import { getFlyingMachineById } from "@/lib/api";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+function getMachineFields(raw: any): any {
+  if (!raw || typeof raw !== "object") return {};
+  return raw.attributes && typeof raw.attributes === "object" ? { ...raw, ...raw.attributes } : raw;
+}
+
 function getStrapiBaseUrl() {
   const explicit = process.env.STRAPI_BASE_URL;
   if (explicit) return explicit;
@@ -51,8 +56,10 @@ export default async function Page({
 
   if (!machine) notFound();
 
+  const fields = getMachineFields(machine);
+
   const baseUrl = getStrapiBaseUrl();
-  const rawImageUrl = extractMediaUrl(machine.Image);
+  const rawImageUrl = extractMediaUrl(fields.Image);
   const imageSrc = rawImageUrl
     ? rawImageUrl.startsWith("http")
       ? rawImageUrl
@@ -63,7 +70,7 @@ export default async function Page({
 
   return(
     <div className="mx-auto w-full max-w-5xl p-6">
-      <h1 className="mb-6 text-2xl font-bold text-center">{machine.Name}</h1>
+      <h1 className="mb-6 text-2xl font-bold text-center">{fields.Name}</h1>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="rounded-md border border-zinc-200 bg-zinc-50 p-4">
@@ -75,7 +82,7 @@ export default async function Page({
                 height={260}
                 width={260}
                 unoptimized
-                alt={machine.Name}
+                alt={fields.Name}
               />
             </div>
           ) : (
@@ -83,7 +90,7 @@ export default async function Page({
           )}
         </div>
 
-        <RadarChart attrs={machine} />
+        <RadarChart attrs={fields} />
       </div>
     </div>
   )
