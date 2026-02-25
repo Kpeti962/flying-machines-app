@@ -34,7 +34,20 @@ export default async function Page({
   params: { id: string } | Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const machine = await getFlyingMachineById(id);
+  let machine: any;
+  try {
+    machine = await getFlyingMachineById(id);
+  } catch (error) {
+    console.error("/flying-machines/[id] load error:", error);
+    return (
+      <div className="mx-auto w-full max-w-5xl p-6">
+        <h1 className="text-2xl font-bold">Hiba</h1>
+        <p className="mt-2 text-sm text-zinc-700">
+          Nem sikerült betölteni a repülőgépet. Ellenőrizd Vercel-en a <b>STRAPI_API_URL</b> és <b>STRAPI_API_TOKEN</b> változókat, illetve hogy a Strapi elérhető-e kívülről.
+        </p>
+      </div>
+    );
+  }
 
   if (!machine) notFound();
 

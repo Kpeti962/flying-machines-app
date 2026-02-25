@@ -1,11 +1,49 @@
 import { FlyingMachinesQuery } from "./types";
 
-const API_URL = process.env.STRAPI_API_URL;
+function getApiUrl(): string {
+  const raw = process.env.STRAPI_API_URL;
+  if (!raw) {
+    throw new Error(
+      "Missing STRAPI_API_URL. On Vercel set it in Project → Settings → Environment Variables (e.g. https://<your-strapi-host>/api).",
+    );
+  }
+  return raw.endsWith("/") ? raw.slice(0, -1) : raw;
+}
 
-const HEADERS = {
-  Authorization: "bearer " + process.env.STRAPI_API_TOKEN,
-  "Content-Type": "application/json",
-};
+function getHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  const token = process.env.STRAPI_API_TOKEN;
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return headers;
+}
+
+async function fetchJson(url: URL, init?: RequestInit) {
+  const res = await fetch(url, {
+    ...init,
+    headers: {
+      ...getHeaders(),
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  const contentType = res.headers.get("content-type") || "";
+  const isJson = contentType.includes("application/json");
+
+  if (!res.ok) {
+    const body = isJson ? await res.json().catch(() => null) : await res.text().catch(() => "");
+    const details =
+      typeof body === "string" ? body : body ? JSON.stringify(body) : "";
+    throw new Error(`Strapi request failed (${res.status} ${res.statusText}): ${url.toString()}${details ? `\n${details}` : ""}`);
+  }
+
+  return isJson ? await res.json() : await res.text();
+}
 
 function first(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
@@ -30,18 +68,20 @@ function normalizeSort(value?: string | string[]) {
 }
 
 export async function getHeroText() {
-  const res = await fetch(API_URL + "/hero-text", {
-    headers: HEADERS,
-  });
-
-  const json = await res.json();
-  return json;
+  try {
+    const apiUrl = getApiUrl();
+    const url = new URL(apiUrl + "/hero-text");
+    return await fetchJson(url, { cache: "no-store" });
+  } catch (error) {
+    console.error("getHeroText error:", error);
+    return null;
+  }
 }
 
 export async function getFlyingMachines(searchParams: FlyingMachinesQuery = {}) {
-  if (!API_URL) throw new Error("Missing STRAPI_API_URL");
+  const apiUrl = getApiUrl();
 
-  const url = new URL(API_URL + "/flying-machines");
+  const url = new URL(apiUrl + "/flying-machines");
   url.searchParams.set("populate", "Image");
   url.searchParams.set("populate[0]", "weapons");
 
@@ -68,13 +108,18 @@ export async function getFlyingMachines(searchParams: FlyingMachinesQuery = {}) 
   url.searchParams.set("pagination[page]", String(page));
   url.searchParams.set("pagination[pageSize]", String(pageSize));
 
-  const res = await fetch(url, { headers: HEADERS, cache: "no-store" });
-  return await res.json();
+  return await fetchJson(url, { cache: "no-store" });
 }
 
 export async function getWeapons() {
-  const res = await fetch(API_URL + "/weapons", { headers: HEADERS });
-  return await res.json();
+  try {
+    const apiUrl = getApiUrl();
+    const url = new URL(apiUrl + "/weapons");
+    return await fetchJson(url, { cache: "no-store" });
+  } catch (error) {
+    console.error("getWeapons error:", error);
+    return { data: [] };
+  }
 }
 
 export async function createContactMessage(data: {
@@ -82,68 +127,51 @@ export async function createContactMessage(data: {
   Email: string;
   Message: string
 }) {
-  try {
-    const res = await fetch(API_URL + "/contact-messages", {
-      method: "POST",
-      headers: HEADERS,
-      body: JSON.stringify({ data }),
-    });
-
-    if (!res.ok) {
-      const json = await res.json();
-      console.error(json);
-      throw new Error("Failed to create contact message: " + json);
-    }
-
-  } catch (error) {
-
-    console.error("Error:", error);
-    throw error;
-  }
+  const apiUrl = getApiUrl();
+  const url = new URL(apiUrl + "/contact-messages");
+  await fetchJson(url, {
+    method: "POST",
+    body: JSON.stringify({ data }),
+  });
 }
 
 export async function getFlyingMachineById(id: string) {
-  if (!API_URL) throw new Error("Missing STRAPI_API_URL");
+  const apiUrl = getApiUrl();
 
-  const singleUrl = new URL(API_URL + "/flying-machines/" + id);
+  const singleUrl = new URL(apiUrl + "/flying-machines/" + id);
   singleUrl.searchParams.set("populate", "Image");
   singleUrl.searchParams.set("populate[0]", "weapons");
 
-  const res = await fetch(singleUrl, { headers: HEADERS, cache: "no-store" });
-  const json = await res.json();
+  try {
+    const json = await fetchJson(singleUrl, { cache: "no-store" });
+    if (json?.data) return json.data;
+  } catch (error) {
+    // fall back to documentId lookup below
+    console.warn("getFlyingMachineById direct fetch failed:", error);
+  }
 
-  if (res.ok && json?.data) return json.data;
-
-  const fallbackUrl = new URL(API_URL + "/flying-machines");
+  const fallbackUrl = new URL(apiUrl + "/flying-machines");
   fallbackUrl.searchParams.set("filters[documentId][$eq]", id);
   fallbackUrl.searchParams.set("populate", "Image");
   fallbackUrl.searchParams.set("populate[0]", "weapons");
   fallbackUrl.searchParams.set("pagination[page]", "1");
   fallbackUrl.searchParams.set("pagination[pageSize]", "1");
 
-  const fallbackRes = await fetch(fallbackUrl, { headers: HEADERS, cache: "no-store" });
-  const fallbackJson = await fallbackRes.json();
-
-  if (!fallbackRes.ok) throw new Error("Failed to fetch flying machine: " + id);
-
+  const fallbackJson = await fetchJson(fallbackUrl, { cache: "no-store" });
   const item = fallbackJson?.data?.[0];
 
   if (item) return item;
 
   const numericId = Number(id);
   if (Number.isFinite(numericId)) {
-    const idFallbackUrl = new URL(API_URL + "/flying-machines");
+    const idFallbackUrl = new URL(apiUrl + "/flying-machines");
     idFallbackUrl.searchParams.set("filters[id][$eq]", String(numericId));
     idFallbackUrl.searchParams.set("populate", "Image");
     idFallbackUrl.searchParams.set("populate[0]", "weapons");
     idFallbackUrl.searchParams.set("pagination[page]", "1");
     idFallbackUrl.searchParams.set("pagination[pageSize]", "1");
 
-    const idFallbackRes = await fetch(idFallbackUrl, { headers: HEADERS, cache: "no-store" });
-    const idFallbackJson = await idFallbackRes.json();
-
-    if (!idFallbackRes.ok) throw new Error("Failed to fetch flying machine: " + id);
-
+    const idFallbackJson = await fetchJson(idFallbackUrl, { cache: "no-store" });
     const idItem = idFallbackJson?.data?.[0];
     if (idItem) return idItem;
   }
