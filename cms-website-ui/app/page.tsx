@@ -16,8 +16,8 @@ export default async function Home() {
       <main>
         <div className="h-128 p-5 bg-[url(/images/hero.png)] bg-cover bg-center flex justify-end items-end">
           <div className="bg-black/50 text-white p-5backdrop-brightness-50 text-3xl max-w-80">
-            <h1>{heroText.data.Title}</h1>
-            <p>{heroText.data.Content}</p>
+            <h1>{heroText?.data?.Title}</h1>
+            <p>{heroText?.data?.Content}</p>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-5 p-5 max-w-screen lg-auto">
