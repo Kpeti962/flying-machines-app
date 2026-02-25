@@ -30,7 +30,14 @@ function getHeaders(): Record<string, string> {
     "Content-Type": "application/json",
   };
 
-  const token = process.env.STRAPI_API_TOKEN;
+  const tokenRaw = process.env.STRAPI_API_TOKEN;
+  const token = tokenRaw
+    ? tokenRaw
+        .trim()
+        .replace(/^"(.*)"$/, "$1")
+        .replace(/^'(.*)'$/, "$1")
+    : "";
+
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
