@@ -7,7 +7,22 @@ function getApiUrl(): string {
       "Missing STRAPI_API_URL. On Vercel set it in Project → Settings → Environment Variables (e.g. https://<your-strapi-host>/api).",
     );
   }
-  return raw.endsWith("/") ? raw.slice(0, -1) : raw;
+
+  const trimmed = raw.endsWith("/") ? raw.slice(0, -1) : raw;
+
+  // Convenience: if someone sets only the host (e.g. https://example.com),
+  // assume Strapi API is served under /api.
+  try {
+    const url = new URL(trimmed);
+    if (url.pathname === "" || url.pathname === "/") {
+      url.pathname = "/api";
+      return url.toString().replace(/\/$/, "");
+    }
+  } catch {
+    // If it's not a valid URL, keep the original trimmed value.
+  }
+
+  return trimmed;
 }
 
 function getHeaders(): Record<string, string> {
