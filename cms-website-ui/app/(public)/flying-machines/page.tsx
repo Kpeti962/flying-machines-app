@@ -101,19 +101,35 @@ export default async function Page({ searchParams }: PageProps) {
 
 
   return (
-    <div className="grid grid-cols-12 ">
-      <div className="col-span-3 bg-gray-100 p-5 flex flex-col">
-        <h2 className="font-bold">Attributes</h2>
-        <ScoreFilter attr="Attack" />
-        <ScoreFilter attr="Defense" />
-        <ScoreFilter attr="Speed" />
-        <ScoreFilter attr="Agility" />
-        <ScoreFilter attr="Capacity" />
-        <WeaponFilter weapons={weaponsList} />
-        <SortByAttribute />
-      </div>
-      <div className="col-span-9 ">
-        <div className="p-5 grid grid-cols-3 gap-5">
+    <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 p-4 md:grid-cols-12 md:p-6">
+      <aside className="order-1 flex flex-col gap-4 rounded-lg bg-gray-100 p-4 md:col-span-3">
+        <h2 className="text-base font-semibold text-zinc-900">Filters</h2>
+        <div className="space-y-3">
+          <ScoreFilter attr="Attack" />
+          <ScoreFilter attr="Defense" />
+          <ScoreFilter attr="Speed" />
+          <ScoreFilter attr="Agility" />
+          <ScoreFilter attr="Capacity" />
+        </div>
+        <div className="mt-4">
+          <WeaponFilter weapons={weaponsList} />
+        </div>
+        <div className="mt-4">
+          <SortByAttribute />
+        </div>
+      </aside>
+      <section className="order-2 md:col-span-9">
+        <div className="mb-4 flex items-baseline justify-between gap-3">
+          <h1 className="text-2xl font-bold text-zinc-900">Flying machines</h1>
+          {flyingMachines?.meta?.pagination?.total ? (
+            <p className="text-sm text-zinc-600">
+              {flyingMachines.meta.pagination.total} result
+              {flyingMachines.meta.pagination.total === 1 ? "" : "s"}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {machines.map((machine: any) => {
             const fields = getMachineFields(machine);
             const machineWeapons = normalizeWeapons(fields.weapons);
@@ -127,8 +143,14 @@ export default async function Page({ searchParams }: PageProps) {
               : undefined;
 
             return (
-            <div key={fields.documentId || fields.id} className="bg-zinc-100 flex flex-col gap-5 items-center py-5">
-              <Link href={`/flying-machines/${fields.documentId || fields.id}`}>
+            <div
+              key={fields.documentId || fields.id}
+              className="flex flex-col items-stretch gap-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 shadow-sm"
+            >
+              <Link
+                href={`/flying-machines/${fields.documentId || fields.id}`}
+                className="flex flex-col items-center"
+              >
                 {imageSrc ? (
                   <Image
                     src={imageSrc}
@@ -136,38 +158,53 @@ export default async function Page({ searchParams }: PageProps) {
                     width={156}
                     unoptimized
                     alt={fields.Name}
+                    className="h-[156px] w-[156px] rounded-md object-cover"
                   />
                 ) : (
-                  <div className="h-[156px] w-[156px] bg-zinc-200" />
+                  <div className="h-[156px] w-[156px] rounded-md bg-zinc-200" />
                 )}
               </Link>
-              <div>{fields.Name}</div>
-              <div className="grid grid-cols-3 gap-5">
-                <div>🗡️{fields.Attack}</div>
-                <div>🛡️{fields.Defense}</div>
-                <div>🚀{fields.Speed}</div>
-              </div>
-              <div>
-                <ul>
-                  <li className="flex gap-2 font-bold items-center">
+              <div className="flex flex-1 flex-col items-center gap-3 text-center">
+                <div className="text-base font-semibold text-zinc-900">
+                  {fields.Name}
+                </div>
+                <div className="grid w-full grid-cols-3 gap-2 text-sm text-zinc-800">
+                  <div className="flex flex-col items-center rounded bg-white/70 px-2 py-1">
+                    <span className="text-xs uppercase tracking-wide text-zinc-500">Attack</span>
+                    <span>🗡️ {fields.Attack}</span>
+                  </div>
+                  <div className="flex flex-col items-center rounded bg-white/70 px-2 py-1">
+                    <span className="text-xs uppercase tracking-wide text-zinc-500">Defense</span>
+                    <span>🛡️ {fields.Defense}</span>
+                  </div>
+                  <div className="flex flex-col items-center rounded bg-white/70 px-2 py-1">
+                    <span className="text-xs uppercase tracking-wide text-zinc-500">Speed</span>
+                    <span>🚀 {fields.Speed}</span>
+                  </div>
+                </div>
+                {machineWeapons.length > 0 ? (
+                  <div className="mt-1 flex flex-wrap items-center justify-center gap-2 text-xs font-medium text-zinc-800">
                     {machineWeapons.map((weapon: Weapon) => (
-                      <div key={weapon.documentId || weapon.id} className="text-sm">
+                      <span
+                        key={weapon.documentId || weapon.id}
+                        className="rounded-full bg-zinc-200 px-2 py-1"
+                      >
                         {weapon.Name}
-                      </div>
+                      </span>
                     ))}
-                  </li>
-                </ul>
+                  </div>
+                ) : null}
               </div>
             </div>
             );
           })}
         </div>
-        <div className="p-5">
+        <div className="mt-6 flex justify-center">
           {flyingMachines?.meta?.pagination ? (
             <Pagination pagination={flyingMachines.meta.pagination} />
           ) : null}
         </div>
-      </div>
+      </section>
     </div>
   );
 }
